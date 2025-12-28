@@ -31,4 +31,3 @@ class SessionThrottleStorage implements ThrottleStorageInterface
         $this->session->forget($this->prefix . $key);
     }
 }
-

@@ -2,10 +2,11 @@
 
 namespace Codemonster\Security\RateLimiting;
 
-use Codemonster\Security\RateLimiting\Contracts\RateLimiterInterface;
+use Codemonster\Security\RateLimiting\Contracts\AttemptRateLimiterInterface;
+use Codemonster\Security\RateLimiting\Storage\AtomicThrottleStorageInterface;
 use Codemonster\Security\RateLimiting\Storage\ThrottleStorageInterface;
 
-class RateLimiter implements RateLimiterInterface
+class RateLimiter implements AttemptRateLimiterInterface
 {
     protected ThrottleStorageInterface $storage;
     /** @var callable(): int */
@@ -36,6 +37,12 @@ class RateLimiter implements RateLimiterInterface
 
     public function hit(string $key, int $decaySeconds): int
     {
+        if ($this->storage instanceof AtomicThrottleStorageInterface) {
+            $record = $this->storage->increment($key, $decaySeconds, ($this->now)());
+
+            return (int) ($record['attempts'] ?? 0);
+        }
+
         $record = $this->record($key);
         $now = ($this->now)();
 
@@ -51,6 +58,47 @@ class RateLimiter implements RateLimiterInterface
         $this->storage->put($key, $record);
 
         return $record['attempts'];
+    }
+
+    /**
+     * Attempt a hit and decide if the limit is exceeded in one call.
+     *
+     * @return array{attempts:int, remaining:int, limited:bool, retry_after:int}
+     */
+    public function attempt(string $key, int $maxAttempts, int $decaySeconds): array
+    {
+        if ($this->storage instanceof AtomicThrottleStorageInterface) {
+            $now = ($this->now)();
+            $record = $this->storage->increment($key, $decaySeconds, $now);
+
+            $attempts = (int) ($record['attempts'] ?? 0);
+            $expiresAt = (int) ($record['expires_at'] ?? 0);
+
+            return [
+                'attempts' => $attempts,
+                'remaining' => max(0, $maxAttempts - $attempts),
+                'limited' => $attempts > $maxAttempts,
+                'retry_after' => max(0, $expiresAt - $now),
+            ];
+        }
+
+        if ($this->tooManyAttempts($key, $maxAttempts)) {
+            return [
+                'attempts' => $maxAttempts,
+                'remaining' => 0,
+                'limited' => true,
+                'retry_after' => $this->availableIn($key),
+            ];
+        }
+
+        $attempts = $this->hit($key, $decaySeconds);
+
+        return [
+            'attempts' => $attempts,
+            'remaining' => max(0, $maxAttempts - $attempts),
+            'limited' => false,
+            'retry_after' => 0,
+        ];
     }
 
     public function availableIn(string $key): int

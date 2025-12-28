@@ -5,10 +5,13 @@ namespace Codemonster\Security\Providers;
 use Codemonster\Annabel\Contracts\ServiceProviderInterface;
 use Codemonster\Annabel\Providers\ServiceProvider;
 use Codemonster\Annabel\Http\Kernel;
+use Codemonster\Database\DatabaseManager;
 use Codemonster\Security\Csrf\CsrfTokenManager;
 use Codemonster\Security\Csrf\VerifyCsrfToken;
 use Codemonster\Security\RateLimiting\Contracts\RateLimiterInterface;
 use Codemonster\Security\RateLimiting\RateLimiter;
+use Codemonster\Security\RateLimiting\Storage\DatabaseThrottleStorage;
+use Codemonster\Security\RateLimiting\Storage\RedisThrottleStorage;
 use Codemonster\Security\RateLimiting\Storage\SessionThrottleStorage;
 use Codemonster\Security\RateLimiting\Storage\ThrottleStorageInterface;
 use Codemonster\Security\RateLimiting\ThrottleRequests;
@@ -31,7 +34,34 @@ class SecurityServiceProvider extends ServiceProvider implements ServiceProvider
             );
         });
 
-        $this->app()->singleton(ThrottleStorageInterface::class, fn() => new SessionThrottleStorage());
+        $this->app()->singleton(ThrottleStorageInterface::class, function () {
+            $cfg = $this->config('security.throttle', []);
+            $storage = $cfg['storage'] ?? 'session';
+
+            if ($storage === 'database' && class_exists(DatabaseManager::class)) {
+                $manager = $this->app()->make(DatabaseManager::class);
+                $connection = $cfg['connection'] ?? null;
+                $table = (string) ($cfg['table'] ?? 'throttle_requests');
+
+                return new DatabaseThrottleStorage($manager->connection($connection), $table);
+            }
+
+            if ($storage === 'redis') {
+                $client = $cfg['redis'] ?? null;
+
+                if (is_string($client)) {
+                    $client = $this->app()->make($client);
+                }
+
+                if (is_object($client)) {
+                    $prefix = (string) ($cfg['prefix'] ?? 'throttle:');
+
+                    return new RedisThrottleStorage($client, $prefix);
+                }
+            }
+
+            return new SessionThrottleStorage();
+        });
 
         $this->app()->singleton(RateLimiterInterface::class, function () {
             return new RateLimiter($this->app()->make(ThrottleStorageInterface::class));
@@ -45,6 +75,7 @@ class SecurityServiceProvider extends ServiceProvider implements ServiceProvider
                 (int) ($cfg['max_attempts'] ?? 60),
                 (int) ($cfg['decay_seconds'] ?? 60),
                 $cfg['except'] ?? [],
+                $cfg['trusted_proxies'] ?? [],
             );
         });
     }

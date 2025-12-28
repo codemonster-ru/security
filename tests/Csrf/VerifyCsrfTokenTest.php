@@ -43,6 +43,18 @@ class VerifyCsrfTokenTest extends TestCase
         $this->assertSame(200, $result->getStatusCode());
     }
 
+    public function testValidatesTokenFromHeader(): void
+    {
+        $token = (new CsrfTokenManager())->token();
+        $middleware = new VerifyCsrfToken();
+
+        $request = new Request('POST', '/submit', [], [], ['X-CSRF-TOKEN' => $token, 'Accept' => 'text/html']);
+
+        $result = $middleware->handle($request, fn() => new Response('ok'));
+
+        $this->assertSame(200, $result->getStatusCode());
+    }
+
     public function testRejectsInvalidTokenWithStatus419(): void
     {
         (new CsrfTokenManager())->token();
@@ -67,5 +79,31 @@ class VerifyCsrfTokenTest extends TestCase
         $result = $middleware->handle($request, fn() => new Response('ok'));
 
         $this->assertSame(200, $result->getStatusCode());
+    }
+
+    public function testSkipsExceptPaths(): void
+    {
+        (new CsrfTokenManager())->token();
+
+        $middleware = new VerifyCsrfToken(null, ['api/*']);
+
+        $request = new Request('POST', '/api/submit', [], [], ['Accept' => 'text/html']);
+
+        $result = $middleware->handle($request, fn() => new Response('ok'));
+
+        $this->assertSame(200, $result->getStatusCode());
+    }
+
+    public function testValidatesJsonRequestsWhenEnabled(): void
+    {
+        (new CsrfTokenManager())->token();
+
+        $middleware = new VerifyCsrfToken(null, [], ['GET', 'HEAD', 'OPTIONS'], true);
+
+        $request = new Request('POST', '/api/submit', [], [], ['Accept' => 'application/json']);
+
+        $result = $middleware->handle($request, fn() => new Response('ok'));
+
+        $this->assertSame(419, $result->getStatusCode());
     }
 }

@@ -22,7 +22,10 @@
         "codemonster-ru/annabel": "^1.0"
     },
     "suggest": {
-        "codemonster-ru/annabel": "Registers SecurityServiceProvider to enable middleware integration"
+        "codemonster-ru/annabel": "Registers SecurityServiceProvider to enable middleware integration",
+        "codemonster-ru/database": "Database storage for throttling (MySQL)",
+        "ext-redis": "Redis storage for throttling (optional)",
+        "predis/predis": "Redis storage for throttling (optional)"
     },
     "autoload": {
         "psr-4": {

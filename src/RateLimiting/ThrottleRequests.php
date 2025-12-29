@@ -195,7 +195,14 @@ class ThrottleRequests
 
     protected function serverRemoteAddr(Request $request): string
     {
-        $server = $request->server();
+        if (method_exists($request, 'server')) {
+            $server = $request->server();
+
+            return (string) ($server['REMOTE_ADDR'] ?? '0.0.0.0');
+        }
+
+        $all = $request->all();
+        $server = is_array($all['server'] ?? null) ? $all['server'] : [];
 
         return (string) ($server['REMOTE_ADDR'] ?? '0.0.0.0');
     }

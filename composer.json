@@ -19,7 +19,7 @@
     },
     "require-dev": {
         "phpunit/phpunit": "^9.6 || ^10.5 || ^11.0 || ^12.0",
-        "codemonster-ru/annabel": "^1.0"
+        "codemonster-ru/support": "^1.0"
     },
     "suggest": {
         "codemonster-ru/annabel": "Registers SecurityServiceProvider to enable middleware integration",

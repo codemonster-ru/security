@@ -7,8 +7,8 @@
 
 `codemonster-ru/security` is a set of reusable security components for the Annabel ecosystem:
 
-- CSRF protection (`VerifyCsrfToken`) with a token from POST (`_token`) and/or headers (`X-CSRF-TOKEN`, `X-XSRF-TOKEN`)
-- Rate limiting / brute-force protection (`ThrottleRequests`) with a configurable key and storage layer
+-   CSRF protection (`VerifyCsrfToken`) with a token from POST (`_token`) and/or headers (`X-CSRF-TOKEN`, `X-XSRF-TOKEN`)
+-   Rate limiting / brute-force protection (`ThrottleRequests`) with a configurable key and storage layer
 
 No Laravel/Symfony dependencies. Compatible with `codemonster-ru/http` and `codemonster-ru/session`.
 
@@ -89,12 +89,12 @@ By default, CSRF is enabled globally (via `Kernel::addMiddleware`), but throttli
 
 `Codemonster\Security\Csrf\VerifyCsrfToken`:
 
-- Skips methods from `except_methods` (`GET/HEAD/OPTIONS` by default)
-- By default, **does not validate JSON requests** (if `Accept: application/json`) to avoid breaking the API
-- Validates the token:
-  - In the body: `_token` (configured via `input_key`)
-  - Or in the headers: `X-CSRF-TOKEN`, `X-XSRF-TOKEN`
-- On error, returns `419` (`application/json` or `text/plain`)
+-   Skips methods from `except_methods` (`GET/HEAD/OPTIONS` by default)
+-   By default, **does not validate JSON requests** (if `Accept: application/json`) to avoid breaking the API
+-   Validates the token:
+    -   In the body: `_token` (configured via `input_key`)
+    -   Or in the headers: `X-CSRF-TOKEN`, `X-XSRF-TOKEN`
+-   On error, returns `419` (`application/json` or `text/plain`)
 
 Security note: if your API uses cookies or other stateful auth, enable `verify_json` to protect JSON POST/PUT/PATCH/DELETE requests too.
 
@@ -102,8 +102,8 @@ Security note: if your API uses cookies or other stateful auth, enable `verify_j
 
 The package autoloads helpers:
 
-- `csrf_token(): string`
-- `csrf_field(): string` - ready-to-use `<input type="hidden" name="_token" ...>`
+-   `csrf_token(): string`
+-   `csrf_field(): string` - ready-to-use `<input type="hidden" name="_token" ...>`
 
 Example in the form:
 
@@ -118,22 +118,22 @@ echo '</form>';
 
 `Codemonster\Security\RateLimiting\ThrottleRequests`:
 
-- stores the attempt counter in storage via `ThrottleStorageInterface`
-- the package contains at least one implementation: `SessionThrottleStorage` (without a database)
-- for shared storages, prefer atomic increments (implement `AtomicThrottleStorageInterface`) to avoid race conditions
-- returns `429` + headers:
-  - `Retry-After` (seconds)
-  - `X-RateLimit-Limit`
-  - `X-RateLimit-Remaining`
-  - `RateLimit-Limit`
-  - `RateLimit-Remaining`
-  - `RateLimit-Reset` (unix timestamp)
+-   stores the attempt counter in storage via `ThrottleStorageInterface`
+-   the package contains at least one implementation: `SessionThrottleStorage` (without a database)
+-   for shared storages, prefer atomic increments (implement `AtomicThrottleStorageInterface`) to avoid race conditions
+-   returns `429` + headers:
+    -   `Retry-After` (seconds)
+    -   `X-RateLimit-Limit`
+    -   `X-RateLimit-Remaining`
+    -   `RateLimit-Limit`
+    -   `RateLimit-Remaining`
+    -   `RateLimit-Reset` (unix timestamp)
 
 ### Best practices
 
-- Enable `verify_json` for stateful APIs (cookies, sessions) to avoid CSRF bypasses.
-- Configure `trusted_proxies` when running behind a proxy; otherwise `X-Forwarded-For` should be ignored.
-- Use database or Redis storage in multi-node deployments to avoid per-node limits.
+-   Enable `verify_json` for stateful APIs (cookies, sessions) to avoid CSRF bypasses.
+-   Configure `trusted_proxies` when running behind a proxy; otherwise `X-Forwarded-For` should be ignored.
+-   Use database or Redis storage in multi-node deployments to avoid per-node limits.
 
 ### Trusted proxies
 
@@ -246,8 +246,12 @@ composer test
 
 Optional E2E env (tests are skipped if not set):
 
-- MySQL: `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_DATABASE`, `MYSQL_USERNAME`, `MYSQL_PASSWORD`
-- Redis: `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`, `REDIS_DB`
+-   MySQL: `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_DATABASE`, `MYSQL_USERNAME`, `MYSQL_PASSWORD`
+-   Redis: `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`, `REDIS_DB`
+
+## Author
+
+[**Kirill Kolesnikov**](https://github.com/KolesnikovKirill)
 
 ## License
 
